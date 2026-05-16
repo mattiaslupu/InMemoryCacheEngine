@@ -5,7 +5,7 @@
 #include <string>
 
 class LRUPolicy : public virtual EvictionPolicy {
-private:
+protected:
     std::list<std::string> accessOrder;
     std::unordered_map<std::string, std::list<std::string>::iterator> keyToNode;
 

@@ -5,7 +5,7 @@
 #include <ctime>
 
 class TTLPolicy : public virtual EvictionPolicy {
-private:
+protected:
     std::unordered_map<std::string, time_t> expirations;
     time_t defaultTTL;
 
