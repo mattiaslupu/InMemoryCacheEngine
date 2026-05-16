@@ -25,4 +25,5 @@ public:
     std::string evict() override;
     std::string getName() const override;
     void reset() override;
+    friend std::ostream& operator<<(std::ostream& os, const LRUPolicy& obj);
 };
