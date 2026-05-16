@@ -1,3 +1,4 @@
+#include "EvictionPolicy.h"
 #include "LRUPolicy.h"
 #include <stdexcept>
 

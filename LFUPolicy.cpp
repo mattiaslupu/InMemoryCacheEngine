@@ -1,3 +1,4 @@
+#include "EvictionPolicy.h"
 #include "LFUPolicy.h"
 
 LFUPolicy::LFUPolicy() : EvictionPolicy(), minFrequency(1) {}
