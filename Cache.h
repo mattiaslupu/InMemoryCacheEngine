@@ -46,6 +46,7 @@ public:
     int getId() const;
     static int getNoInstances();
 
+
     template <typename KK, typename VV>
     friend std::ostream& operator<<(std::ostream& os, const Cache<KK, VV>& cache);
 
@@ -153,71 +154,64 @@ void Cache<K, V>::cleanExpired() {
 }
 
 template<typename K, typename V>
-void Cache<K, V>::put(const K &key, const V &value) {
-    if (store.find(key)) {
-        store[key]=value;
+void Cache<K, V>::put(const K& key, const V& value) {
+    if (store.find(key) != store.end()) {
+        store[key].setValue(value);
         store[key].touch();
         policy->onAccess(key);
         return;
     }
-    if (store.size()==capacity) {
+    if (store.size() == capacity)
         evictOne();
-    }
-    store[key]=CacheEntry<V>(value);
-    policy->onInsert();
+    store[key] = CacheEntry<V>(value);
+    policy->onInsert(key);
     stats.recordInsertion();
 }
 
 template<typename K, typename V>
-V *Cache<K, V>::get(const K &key) {
-     if (!store.find(key)) {
-         stats.recordMiss();
-         return nullptr;
-     }
-    else {
-        if (store[key].isExpired()==true) {
-            policy->onRemove(key);
-            store.erase(key);
-            stats.recordMiss();
-            return nullptr;
-        }
-        stats.recordHit();
-        store[key].touch();
-        policy->onAccess();
-        return *store[key];
+V* Cache<K, V>::get(const K& key) {
+    if (store.find(key) == store.end()) {
+        stats.recordMiss();
+        return nullptr;
     }
+    if (store[key].isExpired()) {
+        policy->onRemove(key);
+        store.erase(key);
+        stats.recordMiss();
+        return nullptr;
+    }
+    store[key].touch();
+    policy->onAccess(key);
+    stats.recordHit();
+    return &store[key].getValue();
 }
 
 template<typename K, typename V>
 void Cache<K, V>::switchPolicy(std::unique_ptr<EvictionPolicy> newPolicy) {
     newPolicy->reset();
-    for (const auto& pair : store) {
+    for (const auto& pair : store)
         newPolicy->onInsert(pair.first);
-    }
-    policy(std::move(newPolicy));
+    policy = std::move(newPolicy);
 }
 
 template<typename K, typename V>
 void Cache<K, V>::resize(size_t newCapacity) {
-    if (newCapacity<=0)
-        throw std::invalid_argument("Capacity cannot be 0 or negative");
-    while (store.size()>newCapacity) {
+    if (newCapacity == 0)
+        throw std::invalid_argument("Cache: capacity must be greater than 0");
+    while (store.size() > newCapacity)
         evictOne();
-    }
-    capacity= newCapacity;
+    capacity = newCapacity;
 }
 
-
 template<typename K, typename V>
-bool Cache<K, V>::remove(const K &key) {
-    if (!store.find(key)) {
-        throw std::invalid_argument("Did not find key in cache");
+bool Cache<K, V>::remove(const K& key) {
+    if (store.find(key) == store.end())
         return false;
-    }
     policy->onRemove(key);
     store.erase(key);
     return true;
 }
+
 
 template<typename K, typename V>
 void Cache<K, V>::clear() {

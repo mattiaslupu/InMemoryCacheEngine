@@ -27,7 +27,8 @@ public:
     CacheEntry<V>& operator=(const CacheEntry<V>& obj);
     ~CacheEntry();
 
-    V getValue() const;
+    V& getValue() { return value; }
+    const V& getValue() const { return value; }
     time_t getTimestamp() const;
     time_t getInsertionTime() const;
     size_t getFrequency() const;
@@ -86,10 +87,7 @@ CacheEntry<V>& CacheEntry<V>::operator=(const CacheEntry<V>& obj) {
 template <typename V>
 CacheEntry<V>::~CacheEntry() {}
 
-template <typename V>
-V CacheEntry<V>::getValue() const {
-    return value;
-}
+
 
 template <typename V>
 time_t CacheEntry<V>::getTimestamp() const {
