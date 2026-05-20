@@ -1,8 +1,5 @@
 #include "LRUWithTTL.h"
 
-LRUWithTTL::LRUWithTTL() : EvictionPolicy(), LRUPolicy(), TTLPolicy() {
-
-}
 
 LRUWithTTL::LRUWithTTL(time_t defaultTTL)  : EvictionPolicy(),LRUPolicy(), TTLPolicy(defaultTTL) {
 
@@ -11,8 +8,6 @@ LRUWithTTL::LRUWithTTL(time_t defaultTTL)  : EvictionPolicy(),LRUPolicy(), TTLPo
 LRUWithTTL::LRUWithTTL(const LRUWithTTL &obj) : EvictionPolicy(obj), LRUPolicy(obj), TTLPolicy(obj) {
 
 }
-
-
 
 LRUWithTTL &LRUWithTTL::operator=(const LRUWithTTL &obj) {
     if (this != &obj) {
@@ -23,9 +18,6 @@ LRUWithTTL &LRUWithTTL::operator=(const LRUWithTTL &obj) {
     return *this;
 }
 
-LRUWithTTL::~LRUWithTTL() {
-
-}
 
 std::string LRUWithTTL::getName() const {
     return "LRU + TTL";

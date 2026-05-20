@@ -12,12 +12,12 @@ protected:
     void moveToFront(const std::string& key);
 
 public:
-    LRUPolicy();
+    LRUPolicy() = default;
     LRUPolicy(const LRUPolicy& obj);
-
     LRUPolicy& operator=(const LRUPolicy& obj);
-
-    ~LRUPolicy() override;
+    LRUPolicy(LRUPolicy&& other) noexcept = default;
+    LRUPolicy& operator=(LRUPolicy&& other) noexcept = default;
+    ~LRUPolicy() = default;
 
     void onAccess(const std::string& key) override;
     void onInsert(const std::string& key) override;

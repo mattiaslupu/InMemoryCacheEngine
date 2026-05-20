@@ -1,18 +1,14 @@
 #include "CacheManager.h"
 
 
-CacheManager::CacheManager() {
-
-}
-
-CacheManager::~CacheManager() {}
-
 CacheManager& CacheManager::getInstance() {
     static CacheManager instance;
     return instance;
 }
 
-void CacheManager::registerCache(const std::string& name, std::shared_ptr<Cache<std::string, std::string>> cache) {
+
+void CacheManager::registerCache(const std::string& name,
+                                  std::shared_ptr<Cache<std::string, std::string>> cache) {
     if (name.empty())
         throw std::invalid_argument("CacheManager: name cannot be empty");
     if (!cache)
@@ -22,10 +18,14 @@ void CacheManager::registerCache(const std::string& name, std::shared_ptr<Cache<
     caches[name] = cache;
 }
 
+
 std::shared_ptr<Cache<std::string, std::string>> CacheManager::getCache(const std::string& name) {
     if (!hasCache(name))
         throw std::out_of_range("CacheManager: cache not found: " + name);
-    return caches.at(name);
+    auto locked = caches.at(name).lock();
+    if (!locked)
+        throw std::runtime_error("CacheManager: cache has been destroyed: " + name);
+    return locked;
 }
 
 void CacheManager::removeCache(const std::string& name) {
@@ -35,7 +35,10 @@ void CacheManager::removeCache(const std::string& name) {
 }
 
 bool CacheManager::hasCache(const std::string& name) const {
-    return caches.find(name) != caches.end();
+    auto it = caches.find(name);
+    if (it == caches.end())
+        return false;
+    return !it->second.expired();
 }
 
 size_t CacheManager::count() const {
@@ -49,21 +52,30 @@ std::vector<std::string> CacheManager::listCacheNames() const {
     return names;
 }
 
+
 void CacheManager::displayAll() const {
     if (caches.empty()) {
         std::cout << "No caches registered.\n";
         return;
     }
     for (const auto& pair : caches) {
-        std::cout << "=== Cache: " << pair.first << " ===\n";
-        std::cout << *pair.second << "\n";
+        auto locked = pair.second.lock();
+        if (locked)
+            std::cout << "=== Cache: " << pair.first << " ===\n" << *locked << "\n";
+        else
+            std::cout << "=== Cache: " << pair.first << " === [destroyed]\n";
     }
 }
 
 std::ostream& operator<<(std::ostream& os, const CacheManager& manager) {
     os << "CacheManager: " << manager.caches.size() << " cache(s)\n";
-    for (const auto& pair : manager.caches)
-        os << "  [" << pair.first << "] → " << pair.second->getPolicyName()
-           << " (" << pair.second->size() << "/" << pair.second->getCapacity() << ")\n";
+    for (const auto& pair : manager.caches) {
+        auto locked = pair.second.lock();
+        if (locked)
+            os << "  [" << pair.first << "] -> " << locked->getPolicyName()
+               << " (" << locked->size() << "/" << locked->getCapacity() << ")\n";
+        else
+            os << "  [" << pair.first << "] -> [destroyed]\n";
+    }
     return os;
 }

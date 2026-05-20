@@ -10,33 +10,6 @@ Operation::Operation(OpType type, const std::string& key, const std::string& val
         throw std::invalid_argument("Operation: key cannot be empty");
 }
 
-Operation::Operation(const Operation& obj)
-    : type{obj.type}, key{obj.key}, value{obj.value} {}
-
-Operation::Operation(Operation&& obj) noexcept
-    : type{obj.type},
-      key{std::move(obj.key)},
-      value{std::move(obj.value)} {}
-
-Operation& Operation::operator=(const Operation& obj) {
-    if (this != &obj) {
-        type = obj.type;
-        key = obj.key;
-        value = obj.value;
-    }
-    return *this;
-}
-
-Operation& Operation::operator=(Operation&& obj) noexcept {
-    if (this != &obj) {
-        type = obj.type;
-        key = std::move(obj.key);
-        value = std::move(obj.value);
-    }
-    return *this;
-}
-
-Operation::~Operation() {}
 
 OpType Operation::getType() const {
     return type;

@@ -1,8 +1,6 @@
-
 #include "LRUPolicy.h"
 #include <stdexcept>
 
-LRUPolicy::LRUPolicy() : EvictionPolicy() {}
 
 LRUPolicy::LRUPolicy(const LRUPolicy& obj) : EvictionPolicy(obj),
     accessOrder{obj.accessOrder},
@@ -22,7 +20,6 @@ LRUPolicy& LRUPolicy::operator=(const LRUPolicy& obj) {
     return *this;
 }
 
-LRUPolicy::~LRUPolicy() {}
 
 void LRUPolicy::moveToFront(const std::string& key) {
     auto it = keyToNode[key];

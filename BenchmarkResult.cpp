@@ -12,42 +12,6 @@ BenchmarkResult::BenchmarkResult(const std::string& policyName, double hitRate, 
         throw std::invalid_argument("BenchmarkResult: hit rate must be between 0 and 100");
 }
 
-BenchmarkResult::BenchmarkResult(const BenchmarkResult& obj) : policyName{obj.policyName}, hitRate{obj.hitRate}, hits{obj.hits}, misses{obj.misses}, evictions{obj.evictions}, durationMs{obj.durationMs} {}
-
-BenchmarkResult::BenchmarkResult(BenchmarkResult&& obj) noexcept
-    : policyName{std::move(obj.policyName)},
-      hitRate{obj.hitRate},
-      hits{obj.hits},
-      misses{obj.misses},
-      evictions{obj.evictions},
-      durationMs{obj.durationMs} {}
-
-BenchmarkResult& BenchmarkResult::operator=(const BenchmarkResult& obj) {
-    if (this != &obj) {
-        policyName = obj.policyName;
-        hitRate = obj.hitRate;
-        hits = obj.hits;
-        misses = obj.misses;
-        evictions = obj.evictions;
-        durationMs = obj.durationMs;
-    }
-    return *this;
-}
-
-BenchmarkResult& BenchmarkResult::operator=(BenchmarkResult&& obj) noexcept {
-    if (this != &obj) {
-        policyName = std::move(obj.policyName);
-        hitRate = obj.hitRate;
-        hits = obj.hits;
-        misses = obj.misses;
-        evictions = obj.evictions;
-        durationMs = obj.durationMs;
-    }
-    return *this;
-}
-
-BenchmarkResult::~BenchmarkResult() {}
-
 std::string BenchmarkResult::getPolicyName() const {
     return policyName;
 }

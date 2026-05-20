@@ -10,12 +10,12 @@ private:
     std::queue<std::string> insertionOrder;
     std::unordered_set<std::string> removed;
 public:
-    FIFOPolicy();
-    FIFOPolicy(const FIFOPolicy& obj);
-
-    FIFOPolicy& operator=(const FIFOPolicy& obj);
-
-    ~FIFOPolicy() override;
+    FIFOPolicy() = default;
+    FIFOPolicy(const FIFOPolicy& other) = default;
+    FIFOPolicy(FIFOPolicy&& other) noexcept = default;
+    FIFOPolicy& operator=(const FIFOPolicy& other) = default;
+    FIFOPolicy& operator=(FIFOPolicy&& other) noexcept = default;
+    ~FIFOPolicy() = default;
 
     void onAccess(const std::string& key) override;
     void onInsert(const std::string& key) override;

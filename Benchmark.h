@@ -22,11 +22,11 @@ private:
 public:
     Benchmark();
     Benchmark(size_t capacity);
-    Benchmark(const Benchmark& obj);
-    Benchmark(Benchmark&& obj);
-    Benchmark& operator=(const Benchmark& obj);
-    Benchmark& operator=(Benchmark&& obj);
-    ~Benchmark();
+    Benchmark(const Benchmark& obj) = default;
+    Benchmark(Benchmark&& obj) noexcept = default;
+    Benchmark& operator=(const Benchmark& obj) = default;
+    Benchmark& operator=(Benchmark&& obj) noexcept = default;
+    ~Benchmark() = default;
 
     void loadWorkload(const std::string& filename);
     void generateRandomWorkload(size_t count, size_t keySpace);

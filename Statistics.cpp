@@ -3,24 +3,6 @@
 
 Statistics::Statistics() : hits{0}, misses{0}, evictions{0}, insertions{0} {}
 
-Statistics::Statistics(const Statistics& obj)
-    : hits{obj.hits},
-      misses{obj.misses},
-      evictions{obj.evictions},
-      insertions{obj.insertions} {}
-
-Statistics& Statistics::operator=(const Statistics& obj) {
-    if (this != &obj) {
-        hits = obj.hits;
-        misses = obj.misses;
-        insertions = obj.insertions;
-        evictions = obj.evictions;
-    }
-    return *this;
-}
-
-Statistics::~Statistics() {}
-
 size_t Statistics::getHits() const {
     return hits;
 }

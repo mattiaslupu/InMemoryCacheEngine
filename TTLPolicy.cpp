@@ -8,22 +8,6 @@ TTLPolicy::TTLPolicy(time_t defaultTTL) : EvictionPolicy(), defaultTTL{defaultTT
         throw std::invalid_argument("TTLPolicy: TTL cannot be negative");
 }
 
-TTLPolicy::TTLPolicy(const TTLPolicy& obj)
-    : EvictionPolicy(obj),
-      expirations{obj.expirations},
-      defaultTTL{obj.defaultTTL} {}
-
-TTLPolicy& TTLPolicy::operator=(const TTLPolicy& obj) {
-    if (this != &obj) {
-        EvictionPolicy::operator=(obj);
-        expirations = obj.expirations;
-        defaultTTL = obj.defaultTTL;
-    }
-    return *this;
-}
-
-TTLPolicy::~TTLPolicy() {}
-
 std::string TTLPolicy::getName() const {
     return "TTL";
 }

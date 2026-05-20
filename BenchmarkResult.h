@@ -14,11 +14,11 @@ private:
 public:
     BenchmarkResult();
     BenchmarkResult(const std::string& policyName, double hitRate, size_t hits, size_t misses, size_t evictions, long long durationMs);
-    BenchmarkResult(const BenchmarkResult& obj);
-    BenchmarkResult(BenchmarkResult&& obj) noexcept;
-    BenchmarkResult& operator=(const BenchmarkResult& obj);
-    BenchmarkResult& operator=(BenchmarkResult&& obj) noexcept;
-    ~BenchmarkResult();
+    BenchmarkResult(const BenchmarkResult& obj) = default;
+    BenchmarkResult(BenchmarkResult&& obj) noexcept = default;
+    BenchmarkResult& operator=(const BenchmarkResult& obj) = default;
+    BenchmarkResult& operator=(BenchmarkResult&& obj) noexcept = default;
+    ~BenchmarkResult() = default;
 
     std::string getPolicyName() const;
     double getHitRate() const;

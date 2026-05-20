@@ -12,32 +12,6 @@ Benchmark::Benchmark(size_t capacity)
         throw std::invalid_argument("Benchmark: capacity must be greater than 0");
 }
 
-Benchmark::Benchmark(const Benchmark& obj)
-    : operations{obj.operations},
-      capacity{obj.capacity} {}
-
-Benchmark::Benchmark(Benchmark&& obj)
-    : operations{std::move(obj.operations)},
-      capacity{obj.capacity} {}
-
-Benchmark& Benchmark::operator=(const Benchmark& obj) {
-    if (this != &obj) {
-        operations = obj.operations;
-        capacity = obj.capacity;
-    }
-    return *this;
-}
-
-Benchmark& Benchmark::operator=(Benchmark&& obj){
-    if (this != &obj) {
-        operations = std::move(obj.operations);
-        capacity = obj.capacity;
-    }
-    return *this;
-}
-
-Benchmark::~Benchmark() {}
-
 
 void Benchmark::loadWorkload(const std::string &filename) {
     std::ifstream file(filename);

@@ -9,9 +9,15 @@
 #include <string>
 #include <iostream>
 #include <stdexcept>
+#include <type_traits>
+#include "CacheException.h"
 
 template <typename K, typename V>
 class Cache {
+    static_assert(std::is_copy_constructible<K>::value,
+       "Cache: key type must be copy constructible");
+    static_assert(std::is_copy_constructible<V>::value,
+        "Cache: value type must be copy constructible");
 private:
     std::unordered_map<K, CacheEntry<V>> store;
     std::unique_ptr<EvictionPolicy> policy;
@@ -27,9 +33,9 @@ public:
     Cache();
     Cache(size_t capacity, std::unique_ptr<EvictionPolicy> policy);
     Cache(const Cache<K, V>& other);
-
     Cache<K, V>& operator=(const Cache<K, V>& other);
-
+    Cache(Cache<K,V>&& other) noexcept = default;
+    Cache<K,V>& operator=(Cache<K,V>&& other) noexcept = default;
     ~Cache();
 
     void put(const K& key, const V& value);
@@ -73,9 +79,9 @@ Cache<K, V>::Cache(size_t capacity, std::unique_ptr<EvictionPolicy> policy)
       capacity{capacity},
       id{++noInstances} {
     if (capacity == 0)
-        throw std::invalid_argument("Cache: capacity must be greater than 0");
+        throw InvalidCapacityException();
     if (!this->policy)
-        throw std::invalid_argument("Cache: policy cannot be null");
+        throw PolicyPtrException();
 }
 
 template <typename K, typename V>
@@ -121,7 +127,7 @@ std::istream& operator>>(std::istream& is, Cache<K, V>& cache) {
     K key;
     std::cout << "Introduce the key: ";
     if (!(is >> key))
-        throw std::invalid_argument("Cache: invalid key input");
+        throw KeyNotFoundException(key);
     V* result = cache.get(key);
     if (result != nullptr)
         std::cout << "Found: " << *result << "\n";
@@ -197,7 +203,7 @@ void Cache<K, V>::switchPolicy(std::unique_ptr<EvictionPolicy> newPolicy) {
 template<typename K, typename V>
 void Cache<K, V>::resize(size_t newCapacity) {
     if (newCapacity == 0)
-        throw std::invalid_argument("Cache: capacity must be greater than 0");
+        throw InvalidCapacityException();
     while (store.size() > newCapacity)
         evictOne();
     capacity = newCapacity;

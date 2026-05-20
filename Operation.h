@@ -18,11 +18,11 @@ private:
 public:
     Operation();
     Operation(OpType type, const std::string& key, const std::string& value = "");
-    Operation(const Operation& obj);
-    Operation(Operation&& obj) noexcept;
-    Operation& operator=(const Operation& obj);
-    Operation& operator=(Operation&& obj) noexcept;
-    ~Operation();
+    Operation(const Operation& obj) = default;
+    Operation(Operation&& obj) noexcept = default;
+    Operation& operator=(const Operation& obj) = default;
+    Operation& operator=(Operation&& obj) noexcept = default;
+    ~Operation() = default;
 
     OpType getType() const;
     std::string getKey() const;

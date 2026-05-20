@@ -11,12 +11,12 @@ protected:
 
 public:
     TTLPolicy();
-    TTLPolicy(time_t defaultTTL);
-    TTLPolicy(const TTLPolicy& obj);
-
-    TTLPolicy& operator=(const TTLPolicy& obj);
-
-    ~TTLPolicy() override;
+    explicit TTLPolicy(time_t defaultTTL);
+    TTLPolicy(const TTLPolicy& obj) = default;
+    TTLPolicy(TTLPolicy&& obj) noexcept = default;
+    TTLPolicy& operator=(const TTLPolicy& obj) = default;
+    TTLPolicy& operator=(TTLPolicy&& obj) noexcept = default;
+    ~TTLPolicy() = default;
 
     void onAccess(const std::string& key) override;
     void onInsert(const std::string& key) override;

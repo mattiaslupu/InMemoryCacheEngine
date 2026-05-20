@@ -8,11 +8,11 @@ protected:
 
 public:
     EvictionPolicy();
-    EvictionPolicy(const EvictionPolicy& other);
-
-    EvictionPolicy& operator=(const EvictionPolicy& obj);
-
-    virtual ~EvictionPolicy();
+    EvictionPolicy(const EvictionPolicy& other) = default;
+    EvictionPolicy(EvictionPolicy&& other) noexcept = default;
+    EvictionPolicy& operator=(const EvictionPolicy& other) = default;
+    EvictionPolicy& operator=(EvictionPolicy&& other) noexcept = default;
+    virtual ~EvictionPolicy() = default;
 
     virtual void onAccess(const std::string& key) = 0;
     virtual void onInsert(const std::string& key) = 0;

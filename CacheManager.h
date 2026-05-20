@@ -8,9 +8,9 @@
 
 class CacheManager {
 private:
-    std::unordered_map<std::string, std::shared_ptr<Cache<std::string, std::string>>> caches;
+    std::unordered_map<std::string, std::weak_ptr<Cache<std::string, std::string>>> caches;
 
-    CacheManager();
+    CacheManager() = default;
 
 public:
     CacheManager(const CacheManager&) = delete;
@@ -18,7 +18,7 @@ public:
     CacheManager(CacheManager&&) = delete;
     CacheManager& operator=(CacheManager&&) = delete;
 
-    ~CacheManager();
+    ~CacheManager() = default;
 
     static CacheManager& getInstance();
 

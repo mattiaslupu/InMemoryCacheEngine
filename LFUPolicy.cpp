@@ -76,9 +76,6 @@ void LFUPolicy::onRemove(const std::string& key) {
     frequencies.erase(key);
 }
 
-LFUPolicy::~LFUPolicy() {
-
-}
 
 std::string LFUPolicy::evict() {
     if (freqBuckets.empty())

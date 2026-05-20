@@ -1,28 +1,4 @@
-
 #include "FIFOPolicy.h"
-
-FIFOPolicy::FIFOPolicy() : EvictionPolicy(){
-
-}
-
-FIFOPolicy::FIFOPolicy(const FIFOPolicy &obj) : EvictionPolicy(obj), insertionOrder(obj.insertionOrder), removed(obj.removed){
-
-}
-
-
-FIFOPolicy& FIFOPolicy::operator=(const FIFOPolicy& obj) {
-    if (this != &obj) {
-        EvictionPolicy::operator=(obj);
-        insertionOrder = obj.insertionOrder;
-        removed = obj.removed;
-    }
-    return *this;
-}
-
-FIFOPolicy::~FIFOPolicy() {
-
-}
-
 
 std::string FIFOPolicy::getName() const {
     return "FIFO";

@@ -23,10 +23,11 @@ private:
 public:
     CacheEntry();
     CacheEntry(const V& value, time_t ttl = 0);
-    CacheEntry(const CacheEntry<V>& obj);
-    CacheEntry<V>& operator=(const CacheEntry<V>& obj);
-    ~CacheEntry();
-
+    CacheEntry(const CacheEntry<V>& obj) = default;
+    CacheEntry(CacheEntry<V>&& obj) noexcept = default;
+    CacheEntry<V>& operator=(const CacheEntry<V>& obj) = default;
+    CacheEntry<V>& operator=(CacheEntry<V>&& obj) noexcept = default;
+    ~CacheEntry() = default;
     V& getValue() { return value; }
     const V& getValue() const { return value; }
     time_t getTimestamp() const;
@@ -63,31 +64,6 @@ CacheEntry<V>::CacheEntry(const V& value, time_t ttl)
         throw std::invalid_argument("CacheEntry: TTL cannot be negative");
     this->ttl = ttl;
 }
-
-template <typename V>
-CacheEntry<V>::CacheEntry(const CacheEntry<V>& obj)
-    : value{obj.value},
-      timestamp{obj.timestamp},
-      insertionTime{obj.insertionTime},
-      frequency{obj.frequency},
-      ttl{obj.ttl} {}
-
-template <typename V>
-CacheEntry<V>& CacheEntry<V>::operator=(const CacheEntry<V>& obj) {
-    if (this != &obj) {
-        value = obj.value;
-        timestamp = obj.timestamp;
-        insertionTime = obj.insertionTime;
-        frequency = obj.frequency;
-        ttl = obj.ttl;
-    }
-    return *this;
-}
-
-template <typename V>
-CacheEntry<V>::~CacheEntry() {}
-
-
 
 template <typename V>
 time_t CacheEntry<V>::getTimestamp() const {

@@ -16,11 +16,11 @@ private:
 
 public:
     LFUPolicy();
-    LFUPolicy(const LFUPolicy& obj);
-
+    LFUPolicy(const LFUPolicy& other);
+    LFUPolicy(LFUPolicy&& other) noexcept = default;
     LFUPolicy& operator=(const LFUPolicy& other);
-
-    ~LFUPolicy() override;
+    LFUPolicy& operator=(LFUPolicy&& other) noexcept = default;
+    ~LFUPolicy() = default;
 
     void onAccess(const std::string& key) override;
     void onInsert(const std::string& key) override;

@@ -11,6 +11,7 @@
 
 class PolicyFactory {
 public:
+    PolicyFactory() = delete;
     static std::unique_ptr<EvictionPolicy> create(const std::string& name);
     static std::vector<std::string> availablePolicies();
 };

@@ -11,11 +11,11 @@ private:
 
 public:
     Statistics();
-    Statistics(const Statistics& obj);
-
-    Statistics& operator=(const Statistics& obj);
-
-    ~Statistics();
+    Statistics(const Statistics& obj) = default;
+    Statistics(Statistics&& obj) noexcept = default;
+    Statistics& operator=(const Statistics& obj) = default;
+    Statistics& operator=(Statistics&& obj) noexcept = default;
+    ~Statistics() = default;
 
     void recordHit();
     void recordMiss();
