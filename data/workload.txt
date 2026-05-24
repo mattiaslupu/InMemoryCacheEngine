@@ -1,0 +1,20 @@
+user:1 Alice Johnson
+user:2 Bob Smith
+user:3 Carol White
+user:4 Dan Brown
+user:5 Eve Davis
+session:abc token_xyz_123
+session:def token_abc_456
+session:ghi token_qwe_789
+product:101 Laptop Pro 15
+product:102 Wireless Mouse
+product:103 Mechanical Keyboard
+product:104 USB-C Hub
+product:105 Monitor 4K
+city:RO Bucharest
+city:FR Paris
+city:DE Berlin
+city:UK London
+lang:en English
+lang:ro Romanian
+lang:de German
