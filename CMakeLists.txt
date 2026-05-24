@@ -17,4 +17,10 @@ add_executable(InMemoryCacheEngine
         src/CacheManager.cpp
         src/Menu.cpp)
 
-file(COPY ${CMAKE_SOURCE_DIR}/data DESTINATION ${CMAKE_BINARY_DIR})
+add_custom_target(copy_data ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/data
+        ${CMAKE_BINARY_DIR}/data
+)
+
+add_dependencies(InMemoryCacheEngine copy_data)

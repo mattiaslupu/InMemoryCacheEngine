@@ -1,0 +1,32 @@
+PUT user:1 Alice
+PUT user:2 Bob
+PUT user:3 Carol
+PUT user:4 Dan
+PUT user:5 Eve
+PUT product:101 Laptop
+PUT product:102 Mouse
+PUT product:103 Keyboard
+PUT city:RO Bucharest
+PUT city:FR Paris
+GET user:1
+GET user:2
+GET user:3
+GET user:99
+GET product:101
+GET product:102
+GET product:999
+REMOVE user:4
+GET user:4
+PUT user:4 Dan
+GET user:4
+GET city:RO
+GET city:DE
+PUT city:DE Berlin
+GET city:DE
+REMOVE product:103
+GET product:103
+PUT user:6 Frank
+PUT user:7 Grace
+GET user:1
+GET user:2
+GET user:5
