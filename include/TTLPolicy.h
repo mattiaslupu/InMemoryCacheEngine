@@ -2,6 +2,7 @@
 #include "EvictionPolicy.h"
 #include <unordered_map>
 #include <ctime>
+#include <limits>
 #include <stdexcept>
 
 template <typename K>
@@ -29,7 +30,19 @@ public:
     void onInsert(const K& key) override {
         if (expirations.find(key) != expirations.end())
             throw std::invalid_argument("TTLPolicy: key already exists");
-        expirations[key] = std::time(nullptr) + defaultTTL;
+        time_t now = std::time(nullptr);
+        expirations[key] = (defaultTTL > std::numeric_limits<time_t>::max() - now)
+                           ? std::numeric_limits<time_t>::max()
+                           : now + defaultTTL;
+    }
+
+    void onUpdate(const K& key) override {
+        if (expirations.find(key) == expirations.end())
+            throw std::invalid_argument("TTLPolicy: key not found");
+        time_t now = std::time(nullptr);
+        expirations[key] = (defaultTTL > std::numeric_limits<time_t>::max() - now)
+                           ? std::numeric_limits<time_t>::max()
+                           : now + defaultTTL;
     }
 
     void onRemove(const K& key) override {
@@ -41,13 +54,19 @@ public:
     K evict() override {
         if (expirations.empty())
             throw std::underflow_error("TTLPolicy: cannot evict from empty cache");
+        K found{};
+        bool hasExpired = false;
         for (const auto& pair : expirations) {
             if (isExpired(pair.first)) {
-                K key = pair.first;
-                expirations.erase(key);
-                this->evictionCount++;
-                return key;
+                found = pair.first;
+                hasExpired = true;
+                break;
             }
+        }
+        if (hasExpired) {
+            expirations.erase(found);
+            this->evictionCount++;
+            return found;
         }
         K key = expirations.begin()->first;
         expirations.erase(key);
@@ -62,19 +81,26 @@ public:
         this->evictionCount = 0;
     }
 
+    std::vector<K> getKeysOrdered() const override {
+        std::vector<K> result;
+        for (const auto& pair : expirations)
+            result.push_back(pair.first);
+        return result;
+    }
+
     bool isExpired(const K& key) const {
         if (expirations.find(key) == expirations.end())
             return false;
         return std::time(nullptr) > expirations.at(key);
     }
 
-    void setDefaultTTL(time_t seconds) {
+    void setDefaultTTL(time_t seconds) override {
         if (seconds < 0)
             throw std::invalid_argument("TTLPolicy: TTL cannot be negative");
         defaultTTL = seconds;
     }
 
-    time_t getDefaultTTL() const { return defaultTTL; }
+    time_t getDefaultTTL() const override { return defaultTTL; }
 
     template <typename KK>
     friend std::ostream& operator<<(std::ostream& os, const TTLPolicy<KK>& obj);

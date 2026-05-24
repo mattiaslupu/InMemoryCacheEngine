@@ -78,20 +78,29 @@ public:
     void onRemove(const K& key) override {
         if (frequencies.find(key) == frequencies.end())
             throw std::invalid_argument("LFUPolicy: key not found");
-        size_t freq = frequencies[key];
-        freqBuckets[freq].erase(keyToBucketNode[key]);
-        if (freqBuckets[freq].empty())
+        size_t freq = frequencies.at(key);
+        freqBuckets.at(freq).erase(keyToBucketNode.at(key));
+        if (freqBuckets.at(freq).empty()) {
             freqBuckets.erase(freq);
+            if (freq == minFrequency && !freqBuckets.empty())
+                minFrequency = freqBuckets.begin()->first;
+        }
         keyToBucketNode.erase(key);
         frequencies.erase(key);
+    }
+
+    void onUpdate(const K& key) override {
+        if (frequencies.find(key) == frequencies.end())
+            throw std::invalid_argument("LFUPolicy: key not found");
+        // writes do not increment frequency in LFU
     }
 
     K evict() override {
         if (freqBuckets.empty())
             throw std::underflow_error("LFUPolicy: cannot evict from empty cache");
-        K key = freqBuckets[minFrequency].back();
-        freqBuckets[minFrequency].erase(keyToBucketNode[key]);
-        if (freqBuckets[minFrequency].empty())
+        K key = freqBuckets.at(minFrequency).back();
+        freqBuckets.at(minFrequency).erase(keyToBucketNode.at(key));
+        if (freqBuckets.at(minFrequency).empty())
             freqBuckets.erase(minFrequency);
         frequencies.erase(key);
         keyToBucketNode.erase(key);
@@ -107,6 +116,14 @@ public:
         keyToBucketNode.clear();
         minFrequency = 1;
         this->evictionCount = 0;
+    }
+
+    std::vector<K> getKeysOrdered() const override {
+        std::vector<K> result;
+        for (const auto& pair : freqBuckets)
+            for (auto it = pair.second.rbegin(); it != pair.second.rend(); ++it)
+                result.push_back(*it);
+        return result;
     }
 
     template <typename KK>

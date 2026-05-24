@@ -28,6 +28,7 @@ public:
     CacheEntry<V>& operator=(const CacheEntry<V>& obj) = default;
     CacheEntry<V>& operator=(CacheEntry<V>&& obj) noexcept = default;
     ~CacheEntry() = default;
+
     V& getValue() { return value; }
     const V& getValue() const { return value; }
     time_t getTimestamp() const;
@@ -37,8 +38,8 @@ public:
 
     void setValue(const V& v);
     void setTTL(time_t t);
-
     void touch();
+    void refreshInsertionTime();
     bool isExpired() const;
 
     template <typename U>
@@ -106,8 +107,15 @@ void CacheEntry<V>::touch() {
 }
 
 template <typename V>
+void CacheEntry<V>::refreshInsertionTime() {
+    insertionTime = currentTime();
+}
+
+template <typename V>
 bool CacheEntry<V>::isExpired() const {
     if (ttl == 0)
+        return false;
+    if (ttl > std::numeric_limits<time_t>::max() - insertionTime)
         return false;
     return currentTime() > insertionTime + ttl;
 }

@@ -7,8 +7,7 @@ CacheManager& CacheManager::getInstance() {
 }
 
 
-void CacheManager::registerCache(const std::string& name,
-                                  std::shared_ptr<Cache<std::string, std::string>> cache) {
+void CacheManager::registerCache(const std::string& name, std::shared_ptr<ICache> cache) {
     if (name.empty())
         throw std::invalid_argument("CacheManager: name cannot be empty");
     if (!cache)
@@ -19,7 +18,7 @@ void CacheManager::registerCache(const std::string& name,
 }
 
 
-std::shared_ptr<Cache<std::string, std::string>> CacheManager::getCache(const std::string& name) {
+std::shared_ptr<ICache> CacheManager::getCache(const std::string& name) {
     if (!hasCache(name))
         throw std::out_of_range("CacheManager: cache not found: " + name);
     auto locked = caches.at(name).lock();
@@ -42,13 +41,18 @@ bool CacheManager::hasCache(const std::string& name) const {
 }
 
 size_t CacheManager::count() const {
-    return caches.size();
+    size_t n = 0;
+    for (const auto& pair : caches)
+        if (!pair.second.expired())
+            n++;
+    return n;
 }
 
 std::vector<std::string> CacheManager::listCacheNames() const {
     std::vector<std::string> names;
     for (const auto& pair : caches)
-        names.push_back(pair.first);
+        if (!pair.second.expired())
+            names.push_back(pair.first);
     return names;
 }
 
@@ -68,7 +72,7 @@ void CacheManager::displayAll() const {
 }
 
 std::ostream& operator<<(std::ostream& os, const CacheManager& manager) {
-    os << "CacheManager: " << manager.caches.size() << " cache(s)\n";
+    os << "CacheManager: " << manager.count() << " cache(s)\n";
     for (const auto& pair : manager.caches) {
         auto locked = pair.second.lock();
         if (locked)

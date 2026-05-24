@@ -16,12 +16,6 @@ public:
         : CacheException("Key not found: " + key) {}
 };
 
-class CacheFullException : public CacheException {
-public:
-    explicit CacheFullException()
-        : CacheException("Cache is full") {}
-};
-
 class InvalidCapacityException : public CacheException {
 public:
     explicit InvalidCapacityException()

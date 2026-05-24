@@ -32,7 +32,16 @@ public:
         LRUPolicy<K>::onAccess(key);
     }
 
+    void onUpdate(const K& key) override {
+        LRUPolicy<K>::onAccess(key);
+        TTLPolicy<K>::onUpdate(key);
+    }
+
     void onInsert(const K& key) override {
+        if (this->keyToNode.find(key) != this->keyToNode.end())
+            throw std::invalid_argument("LRUWithTTL: key already exists");
+        if (this->expirations.find(key) != this->expirations.end())
+            throw std::invalid_argument("LRUWithTTL: key already exists");
         LRUPolicy<K>::onInsert(key);
         TTLPolicy<K>::onInsert(key);
     }
@@ -46,16 +55,22 @@ public:
         if (this->accessOrder.empty())
             throw std::underflow_error("LRUWithTTL: cannot evict from empty cache");
 
+        K expiredKey{};
+        bool foundExpired = false;
         for (const auto& pair : this->expirations) {
             if (this->isExpired(pair.first)) {
-                K key = pair.first;
-                this->expirations.erase(key);
-                auto it = this->keyToNode[key];
-                this->accessOrder.erase(it);
-                this->keyToNode.erase(key);
-                this->evictionCount++;
-                return key;
+                expiredKey = pair.first;
+                foundExpired = true;
+                break;
             }
+        }
+        if (foundExpired) {
+            this->expirations.erase(expiredKey);
+            auto it = this->keyToNode.at(expiredKey);
+            this->accessOrder.erase(it);
+            this->keyToNode.erase(expiredKey);
+            this->evictionCount++;
+            return expiredKey;
         }
 
         K element = this->accessOrder.back();
@@ -71,6 +86,10 @@ public:
     void reset() override {
         LRUPolicy<K>::reset();
         TTLPolicy<K>::reset();
+    }
+
+    std::vector<K> getKeysOrdered() const override {
+        return LRUPolicy<K>::getKeysOrdered();
     }
 
     template <typename KK>

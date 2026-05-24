@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <iostream>
+#include <vector>
 
 template <typename K>
 class EvictionPolicy {
@@ -18,9 +19,13 @@ public:
     virtual void onAccess(const K& key) = 0;
     virtual void onInsert(const K& key) = 0;
     virtual void onRemove(const K& key) = 0;
+    virtual void onUpdate(const K& key) { onAccess(key); }
     virtual K evict() = 0;
     virtual std::string getName() const = 0;
     virtual void reset() = 0;
+    virtual std::vector<K> getKeysOrdered() const = 0;
+    virtual time_t getDefaultTTL() const { return 0; }
+    virtual void setDefaultTTL(time_t) {}
 
     size_t getEvictionCount() const { return evictionCount; }
 

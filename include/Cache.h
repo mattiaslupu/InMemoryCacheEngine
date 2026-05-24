@@ -1,4 +1,5 @@
 #pragma once
+#include "ICache.h"
 #include "CacheEntry.h"
 #include "EvictionPolicy.h"
 #include "Statistics.h"
@@ -14,7 +15,7 @@
 #include "CacheException.h"
 
 template <typename K, typename V>
-class Cache {
+class Cache : public ICache {
     static_assert(std::is_copy_constructible<K>::value,
        "Cache: key type must be copy constructible");
     static_assert(std::is_copy_constructible<V>::value,
@@ -29,6 +30,12 @@ private:
 
     void evictOne();
     void cleanExpired();
+
+    static int nextId(size_t cap, const std::unique_ptr<EvictionPolicy<K>>& pol) {
+        if (cap == 0) throw InvalidCapacityException();
+        if (!pol)     throw PolicyPtrException();
+        return ++noInstances;
+    }
 
 public:
     Cache();
@@ -47,13 +54,13 @@ public:
     bool remove(const K& key);
     void clear();
 
-    size_t size() const;
-    size_t getCapacity() const;
+    size_t size() const override;
+    size_t getCapacity() const override;
     const Statistics& getStats() const;
-    std::string getPolicyName() const;
+    std::string getPolicyName() const override;
+    void print(std::ostream& os) const override;
     int getId() const;
     static int getNoInstances();
-
 
     template <typename KK, typename VV>
     friend std::ostream& operator<<(std::ostream& os, const Cache<KK, VV>& cache);
@@ -71,7 +78,9 @@ Cache<K, V>::Cache()
       policy{std::make_unique<LRUPolicy<K>>()},
       stats{},
       capacity{10},
-      id{++noInstances} {}
+      id{++noInstances} {
+    store.reserve(10);
+}
 
 template <typename K, typename V>
 Cache<K, V>::Cache(size_t capacity, std::unique_ptr<EvictionPolicy<K>> policy)
@@ -79,33 +88,46 @@ Cache<K, V>::Cache(size_t capacity, std::unique_ptr<EvictionPolicy<K>> policy)
       policy{std::move(policy)},
       stats{},
       capacity{capacity},
-      id{++noInstances} {
-    if (capacity == 0)
-        throw InvalidCapacityException();
-    if (!this->policy)
-        throw PolicyPtrException();
+      id{nextId(capacity, this->policy)} {
+    store.reserve(capacity);
 }
 
 template <typename K, typename V>
 Cache<K, V>::Cache(const Cache<K, V>& other)
-    : store{other.store},
+    : store{},
       policy{PolicyFactory<K>::create(other.policy->getName())},
-      stats{other.stats},
+      stats{},
       capacity{other.capacity},
       id{++noInstances} {
-    for (const auto& pair : store)
-        policy->onInsert(pair.first);
+    store.reserve(capacity);
+    policy->setDefaultTTL(other.policy->getDefaultTTL());
+    for (const K& key : other.policy->getKeysOrdered()) {
+        const auto& entry = other.store.at(key);
+        if (!entry.isExpired()) {
+            store[key] = entry;
+            policy->onInsert(key);
+            stats.recordInsertion();
+        }
+    }
 }
 
 template <typename K, typename V>
 Cache<K, V>& Cache<K, V>::operator=(const Cache<K, V>& other) {
     if (this != &other) {
-        store = other.store;
+        store.clear();
         policy = PolicyFactory<K>::create(other.policy->getName());
-        stats = other.stats;
+        policy->setDefaultTTL(other.policy->getDefaultTTL());
+        stats.reset();
         capacity = other.capacity;
-        for (const auto& pair : store)
-            policy->onInsert(pair.first);
+        store.reserve(capacity);
+        for (const K& key : other.policy->getKeysOrdered()) {
+            const auto& entry = other.store.at(key);
+            if (!entry.isExpired()) {
+                store[key] = entry;
+                policy->onInsert(key);
+                stats.recordInsertion();
+            }
+        }
     }
     return *this;
 }
@@ -114,13 +136,18 @@ template <typename K, typename V>
 Cache<K, V>::~Cache() {}
 
 template <typename K, typename V>
-std::ostream& operator<<(std::ostream& os, const Cache<K, V>& cache) {
-    os << "Capacity: " << cache.store.size() << "/" << cache.capacity << "\n";
-    os << "Policy: " << cache.policy->getName() << "\n";
+void Cache<K, V>::print(std::ostream& os) const {
+    os << "Capacity: " << store.size() << "/" << capacity << "\n";
+    os << "Policy: " << policy->getName() << "\n";
     os << "Contents:\n";
-    for (const auto& pair : cache.store)
+    for (const auto& pair : store)
         os << "  [" << pair.first << "] -> " << pair.second << "\n";
-    os << cache.stats;
+    os << stats;
+}
+
+template <typename K, typename V>
+std::ostream& operator<<(std::ostream& os, const Cache<K, V>& cache) {
+    cache.print(os);
     return os;
 }
 
@@ -137,7 +164,6 @@ std::istream& operator>>(std::istream& is, Cache<K, V>& cache) {
         std::cout << "The '" << key << "' key does not exist in the cache.\n";
     return is;
 }
-
 
 template<typename K, typename V>
 void Cache<K, V>::evictOne() {
@@ -165,13 +191,17 @@ template<typename K, typename V>
 void Cache<K, V>::put(const K& key, const V& value) {
     if (store.find(key) != store.end()) {
         store[key].setValue(value);
+        store[key].refreshInsertionTime();
         store[key].touch();
-        policy->onAccess(key);
+        policy->onUpdate(key);
         return;
     }
-    if (store.size() == capacity)
-        evictOne();
-    store[key] = CacheEntry<V>(value);
+    if (store.size() == capacity) {
+        cleanExpired();
+        if (store.size() == capacity)
+            evictOne();
+    }
+    store[key] = CacheEntry<V>(value, policy->getDefaultTTL());
     policy->onInsert(key);
     stats.recordInsertion();
 }
@@ -185,6 +215,7 @@ V* Cache<K, V>::get(const K& key) {
     if (store[key].isExpired()) {
         policy->onRemove(key);
         store.erase(key);
+        stats.recordEviction();
         stats.recordMiss();
         return nullptr;
     }
@@ -196,9 +227,12 @@ V* Cache<K, V>::get(const K& key) {
 
 template<typename K, typename V>
 void Cache<K, V>::switchPolicy(std::unique_ptr<EvictionPolicy<K>> newPolicy) {
+    if (!newPolicy)
+        throw PolicyPtrException();
+    cleanExpired();
     newPolicy->reset();
-    for (const auto& pair : store)
-        newPolicy->onInsert(pair.first);
+    for (const K& key : policy->getKeysOrdered())
+        newPolicy->onInsert(key);
     policy = std::move(newPolicy);
 }
 
@@ -208,6 +242,7 @@ void Cache<K, V>::resize(size_t newCapacity) {
         throw InvalidCapacityException();
     while (store.size() > newCapacity)
         evictOne();
+    store.reserve(newCapacity);
     capacity = newCapacity;
 }
 
@@ -217,9 +252,9 @@ bool Cache<K, V>::remove(const K& key) {
         return false;
     policy->onRemove(key);
     store.erase(key);
+    stats.recordEviction();
     return true;
 }
-
 
 template<typename K, typename V>
 void Cache<K, V>::clear() {

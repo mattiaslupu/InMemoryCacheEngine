@@ -1,5 +1,5 @@
 #pragma once
-#include "Cache.h"
+#include "ICache.h"
 #include <unordered_map>
 #include <memory>
 #include <string>
@@ -8,7 +8,7 @@
 
 class CacheManager {
 private:
-    std::unordered_map<std::string, std::weak_ptr<Cache<std::string, std::string>>> caches;
+    std::unordered_map<std::string, std::weak_ptr<ICache>> caches;
 
     CacheManager() = default;
 
@@ -22,9 +22,9 @@ public:
 
     static CacheManager& getInstance();
 
-    void registerCache(const std::string& name, std::shared_ptr<Cache<std::string, std::string>> cache);
+    void registerCache(const std::string& name, std::shared_ptr<ICache> cache);
 
-    std::shared_ptr<Cache<std::string, std::string>> getCache(const std::string& name);
+    std::shared_ptr<ICache> getCache(const std::string& name);
 
     void removeCache(const std::string& name);
 

@@ -11,7 +11,7 @@ protected:
     std::unordered_map<K, typename std::list<K>::iterator> keyToNode;
 
     void moveToFront(const K& key) {
-        auto it = keyToNode[key];
+        auto it = keyToNode.at(key);
         accessOrder.erase(it);
         accessOrder.push_front(key);
         keyToNode[key] = accessOrder.begin();
@@ -56,7 +56,7 @@ public:
     void onRemove(const K& key) override {
         if (keyToNode.find(key) == keyToNode.end())
             throw std::invalid_argument("LRUPolicy: key not found");
-        auto it = keyToNode[key];
+        auto it = keyToNode.at(key);
         accessOrder.erase(it);
         keyToNode.erase(key);
     }
@@ -77,6 +77,10 @@ public:
         accessOrder.clear();
         keyToNode.clear();
         this->evictionCount = 0;
+    }
+
+    std::vector<K> getKeysOrdered() const override {
+        return std::vector<K>(accessOrder.rbegin(), accessOrder.rend());
     }
 
     template <typename KK>

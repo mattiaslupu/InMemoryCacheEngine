@@ -25,9 +25,10 @@ void Benchmark::loadWorkload(const std::string &filename) {
         if (line.empty()) continue;
         std::stringstream ss(line);
         Operation op;
-        ss >> op;
-        operations.push_back(op);
-
+        try {
+            ss >> op;
+            operations.push_back(op);
+        } catch (const std::invalid_argument&) {}
     }
 
 }
@@ -38,6 +39,12 @@ void Benchmark::generateRandomWorkload(size_t count, size_t keySpace) {
         throw std::invalid_argument("Benchmark: count must be greater than 0");
     if (keySpace == 0)
         throw std::invalid_argument("Benchmark: keySpace must be greater than 0");
+
+    static bool seeded = false;
+    if (!seeded) {
+        srand(static_cast<unsigned>(std::time(nullptr)));
+        seeded = true;
+    }
 
     operations.clear();
     for (size_t i = 0; i < count; i++) {
@@ -126,6 +133,8 @@ void Benchmark::compareAllPolicies() {
         PolicyFactory<std::string>::createAll();
 
     for (auto& policy : policies) {
+        if (auto* ttl = dynamic_cast<TTLPolicy<std::string>*>(policy.get()))
+            ttl->setDefaultTTL(24 * 3600);
         Cache<std::string, std::string> cache(capacity, std::move(policy));
         BenchmarkResult result = run(cache);
         results.push_back(result);

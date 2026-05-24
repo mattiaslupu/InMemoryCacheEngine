@@ -12,7 +12,7 @@ class Menu {
 private:
     Cache<std::string, std::string>& cache;
     bool running;
-    std::vector<std::shared_ptr<Cache<std::string, std::string>>> managedCaches;
+    std::vector<std::shared_ptr<ICache>> managedCaches;
 
     void displayMainMenu() const;
     void displayHeader() const;
