@@ -16,9 +16,9 @@ int main() {
         if (auto* ttlPolicy = dynamic_cast<TTLPolicy<std::string>*>(policy.get()))
             ttlPolicy->setDefaultTTL(static_cast<time_t>(config.getDefaultTTL()));
 
-        Cache<std::string, std::string> cache(config.getCapacity(), std::move(policy));
+        auto cache = std::make_shared<Cache<std::string, std::string>>(config.getCapacity(), std::move(policy));
 
-        Menu menu(cache);
+        Menu menu(cache, "main");
         menu.run();
 
     } catch (const std::exception& e) {

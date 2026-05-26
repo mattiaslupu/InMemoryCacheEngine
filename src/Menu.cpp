@@ -5,8 +5,11 @@
 #include <sstream>
 #include <iomanip>
 
-Menu::Menu(Cache<std::string, std::string>& cache)
-    : cache{cache}, running{true} {}
+Menu::Menu(std::shared_ptr<Cache<std::string, std::string>> cache, const std::string& name)
+    : activeCache{cache}, activeName{name}, running{true} {
+    managedCaches.push_back(cache);
+    CacheManager::getInstance().registerCache(name, cache);
+}
 
 Menu::~Menu() {}
 
@@ -37,8 +40,9 @@ void Menu::displayHeader() const {
     std::cout << "===========================================\n";
     std::cout << "          In-Memory Cache Engine\n";
     std::cout << "===========================================\n";
-    std::cout << "  Policy  : " << cache.getPolicyName() << "\n";
-    std::cout << "  Entries : " << cache.size() << " / " << cache.getCapacity() << "\n";
+    std::cout << "  Active  : " << activeName << "\n";
+    std::cout << "  Policy  : " << activeCache->getPolicyName() << "\n";
+    std::cout << "  Entries : " << activeCache->size() << " / " << activeCache->getCapacity() << "\n";
     std::cout << "===========================================\n";
 }
 
@@ -64,7 +68,7 @@ void Menu::handlePut() {
     try {
         std::string key   = readNonEmptyString("Key   : ");
         std::string value = readNonEmptyString("Value : ");
-        cache.put(key, value);
+        activeCache->put(key, value);
         std::cout << "Stored [" << key << "] -> \"" << value << "\"\n";
     } catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << "\n";
@@ -75,7 +79,7 @@ void Menu::handleGet() {
     std::cout << "\n-- Get --\n";
     try {
         std::string key = readNonEmptyString("Key: ");
-        std::string* result = cache.get(key);
+        std::string* result = activeCache->get(key);
         if (result)
             std::cout << "[" << key << "] -> \"" << *result << "\"\n";
         else
@@ -89,7 +93,7 @@ void Menu::handleDelete() {
     std::cout << "\n-- Delete --\n";
     try {
         std::string key = readNonEmptyString("Key: ");
-        if (cache.remove(key))
+        if (activeCache->remove(key))
             std::cout << "Deleted [" << key << "]\n";
         else
             std::cout << "Key not found: \"" << key << "\"\n";
@@ -101,7 +105,7 @@ void Menu::handleDelete() {
 void Menu::handleDisplayContents() {
     std::cout << "\n-- Cache Contents --\n";
     try {
-        std::cout << cache;
+        std::cout << *activeCache;
     } catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << "\n";
     }
@@ -109,7 +113,7 @@ void Menu::handleDisplayContents() {
 
 void Menu::handleSwitchPolicy() {
     std::cout << "\n-- Switch Policy --\n";
-    std::cout << "Current policy: " << cache.getPolicyName() << "\n\n";
+    std::cout << "Current policy: " << activeCache->getPolicyName() << "\n\n";
 
     std::vector<std::string> policies = PolicyFactory<std::string>::availablePolicies();
     for (int i = 0; i < static_cast<int>(policies.size()); ++i)
@@ -121,8 +125,8 @@ void Menu::handleSwitchPolicy() {
         if (choice == 0) return;
         const std::string& chosen = policies[choice - 1];
         std::unique_ptr<EvictionPolicy<std::string>> newPolicy = PolicyFactory<std::string>::create(chosen);
-        cache.switchPolicy(std::move(newPolicy));
-        std::cout << "Policy switched to: " << cache.getPolicyName() << "\n";
+        activeCache->switchPolicy(std::move(newPolicy));
+        std::cout << "Policy switched to: " << activeCache->getPolicyName() << "\n";
     } catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << "\n";
     }
@@ -130,12 +134,12 @@ void Menu::handleSwitchPolicy() {
 
 void Menu::handleResize() {
     std::cout << "\n-- Resize --\n";
-    std::cout << "Current capacity: " << cache.getCapacity() << "\n";
+    std::cout << "Current capacity: " << activeCache->getCapacity() << "\n";
     std::cout << "New capacity: ";
     try {
         int newCap = readIntInRange(1, 1000000);
-        cache.resize(static_cast<size_t>(newCap));
-        std::cout << "Capacity set to " << cache.getCapacity() << "\n";
+        activeCache->resize(static_cast<size_t>(newCap));
+        std::cout << "Capacity set to " << activeCache->getCapacity() << "\n";
     } catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << "\n";
     }
@@ -143,7 +147,7 @@ void Menu::handleResize() {
 
 void Menu::handleStatistics() {
     std::cout << "\n-- Statistics --\n";
-    std::cout << cache.getStats();
+    std::cout << activeCache->getStats();
 }
 
 void Menu::handleLoadFromFile() {
@@ -165,7 +169,7 @@ void Menu::handleLoadFromFile() {
             std::getline(ss, value);
             if (!value.empty() && value[0] == ' ')
                 value = value.substr(1);
-            cache.put(key, value);
+            activeCache->put(key, value);
             ++loaded;
         }
         std::cout << "Loaded " << loaded << " entries from \"" << filename << "\"\n";
@@ -185,7 +189,7 @@ void Menu::handleBenchmark() {
     try {
         int choice = readIntInRange(0, 4);
         if (choice == 0) return;
-        Benchmark bench(cache.getCapacity());
+        Benchmark bench(activeCache->getCapacity());
 
         if (choice == 1 || choice == 2) {
             std::cout << "Number of operations: ";
@@ -204,7 +208,7 @@ void Menu::handleBenchmark() {
             std::cout << "Warning: the current cache will be cleared during the run.\n";
             std::cout << "Continue? [1] Yes  [2] No\n";
             if (readIntInRange(1, 2) != 1) return;
-            BenchmarkResult result = bench.run(cache);
+            BenchmarkResult result = bench.run(*activeCache);
             std::cout << result;
         } else {
             bench.compareAllPolicies();
@@ -223,10 +227,11 @@ void Menu::handleCacheManager() {
         std::cout << "  [2] Register a new named cache\n";
         std::cout << "  [3] Look up a registered cache\n";
         std::cout << "  [4] Remove a registered cache\n";
+        std::cout << "  [5] Switch active cache\n";
         std::cout << "  [0] Back\n";
 
         CacheManager& manager = CacheManager::getInstance();
-        int choice = readIntInRange(0, 4);
+        int choice = readIntInRange(0, 5);
         try {
             switch (choice) {
                 case 1:
@@ -270,6 +275,10 @@ void Menu::handleCacheManager() {
                     break;
                 }
 
+                case 5:
+                    handleSwitchActiveCache();
+                    break;
+
                 case 0:
                     inSubmenu = false;
                     break;
@@ -280,10 +289,46 @@ void Menu::handleCacheManager() {
     }
 }
 
+void Menu::handleSwitchActiveCache() {
+    std::cout << "\n-- Switch Active Cache --\n";
+    CacheManager& manager = CacheManager::getInstance();
+    std::vector<std::string> names = manager.listCacheNames();
+
+    if (names.empty()) {
+        std::cout << "No caches registered.\n";
+        return;
+    }
+
+    for (int i = 0; i < static_cast<int>(names.size()); ++i)
+        std::cout << "  [" << (i + 1) << "] " << names[i]
+                  << (names[i] == activeName ? " (active)" : "") << "\n";
+    std::cout << "  [0] Back\n";
+
+    int choice = readIntInRange(0, static_cast<int>(names.size()));
+    if (choice == 0) return;
+
+    const std::string& chosen = names[choice - 1];
+    if (chosen == activeName) {
+        std::cout << "\"" << chosen << "\" is already the active cache.\n";
+        return;
+    }
+
+    auto found = manager.getCache(chosen);
+    auto casted = std::dynamic_pointer_cast<Cache<std::string, std::string>>(found);
+    if (!casted) {
+        std::cout << "Error: cache type incompatible.\n";
+        return;
+    }
+
+    activeCache = casted;
+    activeName = chosen;
+    std::cout << "Switched to cache \"" << activeName << "\".\n";
+}
+
 void Menu::handleReset() {
     std::cout << "\n-- Reset --\n";
     try {
-        cache.clear();
+        activeCache->clear();
         std::cout << "Cache cleared.\n";
     } catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << "\n";
